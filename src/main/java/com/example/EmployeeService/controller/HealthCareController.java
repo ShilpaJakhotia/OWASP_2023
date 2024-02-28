@@ -28,10 +28,24 @@ public class HealthCareController {
     public Optional<Patient> getSpecificPatientDetails(@PathVariable("id") Long id,
                                                      @RequestHeader("Authorization")String token)
     {
-        if(token !=null && token.equalsIgnoreCase("doctor"))
-            return healthCareService.fetchPatientDetails(id);
-        else
-            throw new RuntimeException("User is NOT authorized !");
+        Optional<Patient> patientOptional = healthCareService.fetchPatientDetails(id);
+        if (patientOptional.isPresent()) {
+            Patient patient = patientOptional.get();
+            if (token != null && token.equalsIgnoreCase("doctor")) {
+                return Optional.of(patient); // Doctor can access all details
+            } else if (token != null && token.equalsIgnoreCase("nurse")) {
+                // Nurse can access limited details
+                Patient limitedPatient = new Patient();
+                limitedPatient.setId(patient.getId());
+                limitedPatient.setName(patient.getName());
+                limitedPatient.setPrescription(patient.getPrescription());
+                return Optional.of(limitedPatient);
+            } else {
+                throw new RuntimeException("User is NOT authorized !");
+            }
+        } else {
+            throw new RuntimeException("Patient not found !");
+        }
     }
 
     @DeleteMapping ("/api/v2/patients/{id}")
